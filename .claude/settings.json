@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "/Users/murat.baturay/Code/ave/vec-attempt-3/Archive 8.36.36 PM"
+    ],
+    "allow": [
+      "Bash(open \"/Users/murat.baturay/Code/ave/vec-attempt-3/Archive 8.36.36 PM/adventure-outfitters.html\")"
+    ]
+  }
+}
