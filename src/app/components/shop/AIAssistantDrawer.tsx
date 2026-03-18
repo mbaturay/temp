@@ -36,7 +36,7 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   base_layer: ['base layer', 'base', 'crew', 'half-zip', 'fleece', 'thermal'],
   pants: ['pants', 'bib', 'bibs', 'ski pants', 'trousers'],
   gloves: ['glove', 'gloves', 'mitten', 'mittens'],
-  goggles: ['goggles', 'goggle', 'lens', 'lenses'],
+  goggles: ['goggles', 'goggle', 'googles', 'lens', 'lenses'],
   beanie: ['beanie', 'hat', 'toque', 'headband'],
   boots: ['boots', 'boot', 'footwear', 'shoes'],
   socks: ['socks', 'sock'],
@@ -88,7 +88,7 @@ function parseCommand(input: string, bundleItems: BundleItem[]): ParsedCommand {
 
   if (/remove|drop|don'?t need|get rid|take out|ditch/.test(lower))
     return { intent: 'remove', target };
-  if (/add|include|throw in|need a|get me/.test(lower))
+  if (/add|include|throw in|need|get me/.test(lower))
     return { intent: 'add', target };
   if (/swap|switch|replace|change|different|another/.test(lower))
     return { intent: 'swap', target };
