@@ -178,6 +178,7 @@ export function AIAssistantDrawer({
     setStreaming(false);
     setStreamedText('');
     setMessages(prev => [...prev, { role: 'assistant', text }]);
+    setTimeout(() => inputRef.current?.focus(), 50);
   };
 
   const handleSubmit = async () => {
