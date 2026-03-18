@@ -257,7 +257,7 @@ function ResultsPage({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setAiDrawerOpen(true)}
+              onClick={() => setAiDrawerOpen(o => !o)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 text-background text-sm hover:bg-white/20 transition-colors"
             >
               <Sparkles className="size-3.5" />

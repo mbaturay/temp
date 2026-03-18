@@ -128,7 +128,7 @@ export function AIAssistantDrawer({
   const [streamedText, setStreamedText] = useState('');
   const [showTyping, setShowTyping] = useState(false);
   const [chips, setChips] = useState<string[]>(CHIP_SETS.default);
-  const [hasShownWelcome, setHasShownWelcome] = useState(false);
+  const welcomeShownRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const bundleRef = useRef(bundle);
@@ -142,8 +142,8 @@ export function AIAssistantDrawer({
 
   // Welcome message on first open
   useEffect(() => {
-    if (open && !hasShownWelcome && bundle.items.length > 0) {
-      setHasShownWelcome(true);
+    if (open && !welcomeShownRef.current && bundle.items.length > 0) {
+      welcomeShownRef.current = true;
       const count = bundle.items.length;
       const loc = intentData.location || 'your destination';
       const welcome = `Hey! I built a ${count}-item kit for your ${intentData.activity.toLowerCase()} trip to ${loc}. Want me to adjust anything? Try asking me to swap gear, tweak your budget, or optimize for warmth or weight.`;
@@ -154,6 +154,14 @@ export function AIAssistantDrawer({
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 300);
   }, [open]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [open, onClose]);
 
   const streamResponse = async (text: string) => {
     setShowTyping(true);
@@ -344,27 +352,11 @@ export function AIAssistantDrawer({
   const noTargetMsg = () => `I'm not sure which item you mean. Try naming a specific product or category like "jacket" or "socks".`;
 
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[199] bg-black/20 backdrop-blur-sm md:hidden"
-            onClick={onClose}
-          />
-
-          {/* Drawer */}
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-            className="fixed top-0 right-0 w-full sm:w-[400px] h-full z-[200] flex flex-col bg-background/95 backdrop-blur-xl border-l border-border shadow-2xl"
-          >
+    <div
+      className={`fixed top-0 right-0 w-full sm:w-[400px] h-full z-[200] flex flex-col bg-background/95 backdrop-blur-xl border-l border-border shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        open ? 'translate-x-0' : 'translate-x-full'
+      }`}
+    >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
               <div className="flex items-center gap-2.5">
@@ -474,10 +466,7 @@ export function AIAssistantDrawer({
                 <Send className="size-4" />
               </button>
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+    </div>
   );
 }
 
