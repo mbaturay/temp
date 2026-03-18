@@ -13,6 +13,7 @@ export interface CatalogItem {
   image: string;
   tags: string[];
   style: StyleTag;
+  weight: number; // in lbs
 }
 
 export const catalog: CatalogItem[] = [
@@ -29,6 +30,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1674350285486-a62fcdc2fa61?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['waterproof', 'insulation', 'warm', 'lightweight'],
     style: 'sporty',
+    weight: 1.4,
   },
   {
     id: 'j-classic',
@@ -42,6 +44,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1764602655362-a07ae9cf0f2b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['waterproof', 'wind-resistant', 'warm', 'durable'],
     style: 'classic',
+    weight: 1.6,
   },
   {
     id: 'j-premium',
@@ -55,6 +58,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1674350285486-a62fcdc2fa61?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['waterproof', 'down-fill', 'insulation', 'warm', 'premium'],
     style: 'premium',
+    weight: 1.8,
   },
   {
     id: 'j-all',
@@ -68,6 +72,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['waterproof', 'wind-resistant', 'layering', 'durable'],
     style: 'all',
+    weight: 1.5,
   },
 
   // ── Base Layers ───────────────────────────────────────────────────────────
@@ -83,6 +88,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1565962684631-716a905dd295?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['moisture-wicking', 'warm', 'layering', 'stretch'],
     style: 'sporty',
+    weight: 0.4,
   },
   {
     id: 'bl-classic',
@@ -96,6 +102,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1698328722821-0500626c27d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['merino-wool', 'warm', 'layering', 'natural'],
     style: 'classic',
+    weight: 0.5,
   },
   {
     id: 'bl-premium',
@@ -109,6 +116,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1565962684631-716a905dd295?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['merino-wool', 'moisture-wicking', 'warm', 'layering', 'premium'],
     style: 'premium',
+    weight: 0.3,
   },
   {
     id: 'bl-all',
@@ -122,6 +130,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['moisture-wicking', 'stretch', 'layering'],
     style: 'all',
+    weight: 0.4,
   },
 
   // ── Pants ─────────────────────────────────────────────────────────────────
@@ -137,6 +146,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1768777156505-296818362138?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['waterproof', 'warm', 'durable', 'vented'],
     style: 'sporty',
+    weight: 1.2,
   },
   {
     id: 'p-classic',
@@ -150,6 +160,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1768777156505-296818362138?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['waterproof', 'wind-resistant', 'warm', 'durable', 'bib'],
     style: 'classic',
+    weight: 1.5,
   },
   {
     id: 'p-premium',
@@ -163,6 +174,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1768777156505-296818362138?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['waterproof', 'insulation', 'warm', 'lightweight', 'premium'],
     style: 'premium',
+    weight: 1.8,
   },
   {
     id: 'p-all',
@@ -176,6 +188,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['waterproof', 'durable', 'vented', 'stretch'],
     style: 'all',
+    weight: 1.3,
   },
 
   // ── Gloves ────────────────────────────────────────────────────────────────
@@ -191,6 +204,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1739395670857-c9ac7e0b39b8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['waterproof', 'warm', 'grip', 'touchscreen'],
     style: 'all',
+    weight: 0.5,
   },
   {
     id: 'g-premium',
@@ -204,6 +218,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1739395670857-c9ac7e0b39b8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['waterproof', 'insulation', 'warm', 'down-fill', 'premium'],
     style: 'premium',
+    weight: 0.6,
   },
   {
     id: 'g-classic',
@@ -217,6 +232,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['leather', 'warm', 'durable', 'classic'],
     style: 'classic',
+    weight: 0.4,
   },
 
   // ── Beanies ───────────────────────────────────────────────────────────────
@@ -232,6 +248,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1625540438967-fe892ad47ed0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['merino-wool', 'warm', 'layering', 'helmet-compatible'],
     style: 'classic',
+    weight: 0.15,
   },
   {
     id: 'b-sporty',
@@ -245,6 +262,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1625540438967-fe892ad47ed0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['warm', 'stretch', 'layering', 'reflective', 'helmet-compatible'],
     style: 'sporty',
+    weight: 0.1,
   },
   {
     id: 'b-premium',
@@ -258,6 +276,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['cashmere', 'warm', 'soft', 'premium'],
     style: 'premium',
+    weight: 0.2,
   },
 
   // ── Goggles ───────────────────────────────────────────────────────────────
@@ -273,6 +292,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1644270769241-29c182863c68?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['UV-protection', 'anti-fog', 'OTG', 'wide-view'],
     style: 'sporty',
+    weight: 0.35,
   },
   {
     id: 'og-premium',
@@ -286,6 +306,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1644270769241-29c182863c68?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['UV-protection', 'anti-fog', 'magnetic-lens', 'premium', 'wide-view'],
     style: 'premium',
+    weight: 0.4,
   },
   {
     id: 'og-classic',
@@ -299,6 +320,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['UV-protection', 'anti-fog', 'classic', 'wide-view'],
     style: 'classic',
+    weight: 0.3,
   },
 
   // ── Boots ─────────────────────────────────────────────────────────────────
@@ -314,6 +336,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1642690167184-eb64f4ef469f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['waterproof', 'insulation', 'warm', 'grip', 'durable'],
     style: 'classic',
+    weight: 2.8,
   },
   {
     id: 'bt-sporty',
@@ -327,6 +350,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['waterproof', 'lightweight', 'warm', 'grip'],
     style: 'sporty',
+    weight: 2.5,
   },
   {
     id: 'bt-premium',
@@ -340,6 +364,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1642690167184-eb64f4ef469f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['waterproof', 'insulation', 'premium', 'grip', 'durable'],
     style: 'premium',
+    weight: 3.2,
   },
 
   // ── Socks ─────────────────────────────────────────────────────────────────
@@ -355,6 +380,7 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1642853474532-9aca78f70629?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['merino-wool', 'warm', 'cushioned', 'moisture-wicking'],
     style: 'all',
+    weight: 0.2,
   },
   {
     id: 'sk-premium',
@@ -368,5 +394,6 @@ export const catalog: CatalogItem[] = [
     image: 'https://images.unsplash.com/photo-1642853474532-9aca78f70629?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=600',
     tags: ['merino-wool', 'warm', 'compression', 'premium'],
     style: 'premium',
+    weight: 0.25,
   },
 ];

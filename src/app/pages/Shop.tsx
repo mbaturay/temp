@@ -1,19 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { RotateCcw, Sparkles } from 'lucide-react';
+import { RotateCcw, Sparkles, ChevronDown, ShoppingCart, Star, RefreshCw, X } from 'lucide-react';
 import skiVideo from '../../video/ski.mp4';
-import { BundleRecommendation } from '../components/chat/BundleRecommendation';
 import { IntentBuilder } from '../components/shop/IntentBuilder';
 import { ProductDetailPanel } from '../components/shop/ProductDetailPanel';
-import { AIAssistantDrawer } from '../components/shop/AIAssistantDrawer';
-import { Slider } from '../components/ui/slider';
+import { AdventureChatBar } from '../components/shop/AdventureChatBar';
+import { FilterSidebar, type FilterState } from '../components/shop/FilterSidebar';
+import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { getProductImageSrc, parseProductName } from '../lib/productImage';
 import {
   generateBundle,
   adjustBundle,
   skillToStyle,
   skillToSliderDefault,
   generateRationale,
+  getReplacement,
   type IntentData,
   type Bundle,
   type BundleItem,
@@ -23,7 +25,7 @@ import { useCart } from '../lib/cart-context';
 import { useShopSession } from '../lib/shop-session-context';
 
 // ── Shop video hero ──────────────────────────────────────────────────────────
-function ShopVideoHero() {
+function ShopVideoHero({ bundle }: { bundle: Bundle }) {
   const ref = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     const v = ref.current;
@@ -32,8 +34,11 @@ function ShopVideoHero() {
     v.play().catch(() => {});
   }, []);
 
+  // Top 3 items as "essentials" floating on the right
+  const essentials = bundle.items.slice(0, 3);
+
   return (
-    <div className="fixed inset-0 top-14 z-[5] bg-black overflow-hidden">
+    <div className="relative w-full h-[50vh] min-h-[360px] overflow-hidden bg-black">
       <video
         ref={ref}
         autoPlay
@@ -45,11 +50,34 @@ function ShopVideoHero() {
         src={skiVideo}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/40" />
+
+      {/* Floating essentials on right */}
+      <div className="absolute right-6 top-6 bottom-6 flex flex-col justify-center gap-3 w-[200px]">
+        {essentials.map((item, i) => {
+          const { base } = parseProductName(item.catalogItem.name);
+          const imgSrc = getProductImageSrc(item.catalogItem);
+          return (
+            <motion.div
+              key={item.catalogItem.id}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 + i * 0.15, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-white/20"
+            >
+              <p className="text-[11px] font-medium text-black truncate">{base}</p>
+              <p className="text-[10px] text-neutral-500">${item.catalogItem.price} · {item.catalogItem.brand}</p>
+              <div className="flex gap-1.5 mt-1.5">
+                <button className="text-[9px] px-2 py-0.5 bg-black text-white rounded font-medium">Add to Cart</button>
+                <button className="text-[9px] px-2 py-0.5 border border-neutral-300 rounded text-neutral-600">Quick View</button>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
     </div>
   );
 }
-
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 // ── Building screen ───────────────────────────────────────────────────────────
 function BuildingScreen({ intentData }: { intentData: IntentData }) {
@@ -99,16 +127,108 @@ function BuildingScreen({ intentData }: { intentData: IntentData }) {
   );
 }
 
-// ── Trait filter definitions ──────────────────────────────────────────────────
-const TRAIT_FILTERS = [
-  { key: 'all', label: 'All Gear', tags: [] },
-  { key: 'warmth', label: 'Warmth', tags: ['warm', 'insulation', 'down-fill', 'merino-wool'] },
-  { key: 'waterproof', label: 'Waterproof', tags: ['waterproof'] },
-  { key: 'lightweight', label: 'Lightweight', tags: ['lightweight', 'stretch'] },
-  { key: 'durability', label: 'Durability', tags: ['durable', 'wind-resistant'] },
-] as const;
+// ── Star rating ──────────────────────────────────────────────────────────────
+function StarRating({ rating, count }: { rating: number; count: number }) {
+  return (
+    <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <Star
+            key={n}
+            className={`size-3 ${
+              n <= Math.round(rating) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/20'
+            }`}
+          />
+        ))}
+      </div>
+      <span className="text-xs text-muted-foreground">{rating.toFixed(1)}</span>
+    </div>
+  );
+}
 
-type TraitKey = (typeof TRAIT_FILTERS)[number]['key'];
+// ── Product card ─────────────────────────────────────────────────────────────
+const CATEGORY_LABELS: Record<string, string> = {
+  jacket: 'Jacket',
+  base_layer: 'Base Layer',
+  pants: 'Pants',
+  gloves: 'Gloves',
+  beanie: 'Beanie',
+  goggles: 'Goggles',
+  boots: 'Boots',
+  socks: 'Socks',
+};
+
+function ProductCard({
+  item,
+  onAddToCart,
+  onProductClick,
+}: {
+  item: BundleItem;
+  onAddToCart: (item: BundleItem) => void;
+  onProductClick: (item: BundleItem) => void;
+}) {
+  const { base } = parseProductName(item.catalogItem.name);
+  const imgSrc = getProductImageSrc(item.catalogItem);
+  const cat = item.catalogItem;
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      className="bg-background border border-border rounded-xl overflow-hidden hover:shadow-md transition-shadow cursor-pointer group"
+      onClick={() => onProductClick(item)}
+    >
+      {/* Image */}
+      <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+        <ImageWithFallback
+          src={imgSrc}
+          alt={cat.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+        <span
+          className="absolute top-2 left-2 text-[10px] font-semibold uppercase tracking-wider bg-foreground/80 text-background px-2 py-0.5 rounded"
+          style={{ fontFamily: "'Outfit', sans-serif" }}
+        >
+          {CATEGORY_LABELS[cat.category] || cat.category}
+        </span>
+      </div>
+
+      {/* Body */}
+      <div className="p-4">
+        <p className="text-xs text-muted-foreground mb-0.5" style={{ fontFamily: "'Outfit', sans-serif" }}>
+          {cat.brand}
+        </p>
+        <p className="font-medium text-sm mb-2 leading-snug" style={{ fontFamily: "'Outfit', sans-serif" }}>
+          {base}
+        </p>
+        <StarRating rating={cat.rating} count={cat.ratingCount} />
+
+        <div className="flex items-baseline justify-between mt-3">
+          <div>
+            <span className="text-xs text-muted-foreground">Price</span>
+            <p className="font-semibold">${cat.price.toFixed(2)}</p>
+          </div>
+          <div className="text-right">
+            <span className="text-xs text-muted-foreground">Weight</span>
+            <p className="font-medium text-sm">{cat.weight} lbs</p>
+          </div>
+        </div>
+
+        <button
+          onClick={(e) => { e.stopPropagation(); onAddToCart(item); }}
+          className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+          style={{ fontFamily: "'Outfit', sans-serif" }}
+        >
+          <ShoppingCart className="size-3.5" />
+          Add to Cart
+        </button>
+      </div>
+    </motion.div>
+  );
+}
 
 // ── Results page ──────────────────────────────────────────────────────────────
 function ResultsPage({
@@ -120,6 +240,7 @@ function ResultsPage({
   onProceedToCheckout,
   onStartOver,
   onRestoreToCart,
+  onAddSingleItem,
 }: {
   initialBundle: Bundle;
   intentData: IntentData;
@@ -129,33 +250,36 @@ function ResultsPage({
   onProceedToCheckout: () => void;
   onStartOver: () => void;
   onRestoreToCart: (item: BundleItem) => void;
+  onAddSingleItem: (item: BundleItem) => void;
 }) {
   const [currentBundle, setCurrentBundle] = useState<Bundle>(initialBundle);
   const [bundleUpdateCount, setBundleUpdateCount] = useState(0);
   const [pdpItem, setPdpItem] = useState<BundleItem | null>(null);
   const [pdpOpen, setPdpOpen] = useState(false);
-  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
-  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
+  const [profileExpanded, setProfileExpanded] = useState(false);
 
   // ── Sliders ──
   const defaultSlider = skillToSliderDefault(intentData.skillLevel);
   const [stylePriority, setStylePriority] = useState(defaultSlider);
   const [budgetPriority, setBudgetPriority] = useState(defaultSlider);
-  const [sliderFeedback, setSliderFeedback] = useState<string | null>(null);
 
-  // ── Trait filter ──
-  const [activeTrait, setActiveTrait] = useState<TraitKey>('all');
+  // ── Filters ──
+  const [filters, setFilters] = useState<FilterState>({
+    categories: [],
+    priceRange: { min: 0, max: 1000 },
+    brands: [],
+    productTypes: [],
+    bundleStatus: [],
+  });
 
-  const filteredBundle: Bundle = (() => {
-    if (activeTrait === 'all') return currentBundle;
-    const filter = TRAIT_FILTERS.find((f) => f.key === activeTrait);
-    if (!filter) return currentBundle;
-    const matched = currentBundle.items.filter((i) =>
-      i.catalogItem.tags.some((t) => filter.tags.includes(t))
-    );
-    if (matched.length === 0) return currentBundle; // fallback to all if nothing matches
-    return { ...currentBundle, items: matched };
-  })();
+  // ── Filter logic ──
+  const filteredItems = currentBundle.items.filter((item) => {
+    const cat = item.catalogItem;
+    if (filters.categories.length > 0 && !filters.categories.includes(cat.category)) return false;
+    if (cat.price < filters.priceRange.min || cat.price > filters.priceRange.max) return false;
+    if (filters.brands.length > 0 && !filters.brands.includes(cat.brand)) return false;
+    return true;
+  });
 
   const style = skillToStyle(intentData.skillLevel);
 
@@ -173,7 +297,7 @@ function ResultsPage({
     changedSlider: 'vibe' | 'budget'
   ) => {
     if (cartAdded) return;
-    const { bundle: newBundle, message } = adjustBundle(
+    const { bundle: newBundle } = adjustBundle(
       currentBundle,
       newStyle,
       newBudget,
@@ -181,18 +305,17 @@ function ResultsPage({
       changedSlider
     );
     setCurrentBundle(newBundle);
-    setSliderFeedback(message);
     setBundleUpdateCount((c) => c + 1);
   };
 
-  const handleStyleChange = ([v]: number[]) => {
-    setStylePriority(v);
-    applySliderChange(v, budgetPriority, 'vibe');
+  const handleStyleChange = (v: number[]) => {
+    setStylePriority(v[0]);
+    applySliderChange(v[0], budgetPriority, 'vibe');
   };
 
-  const handleBudgetChange = ([v]: number[]) => {
-    setBudgetPriority(v);
-    applySliderChange(stylePriority, v, 'budget');
+  const handleBudgetChange = (v: number[]) => {
+    setBudgetPriority(v[0]);
+    applySliderChange(stylePriority, v[0], 'budget');
   };
 
   const handleProductClick = (item: BundleItem) => {
@@ -217,20 +340,20 @@ function ResultsPage({
     setBundleUpdateCount((c) => c + 1);
   };
 
-  const handleHighlightCard = (itemId: string | null) => {
-    setHighlightedItemId(itemId);
-    if (itemId) setTimeout(() => setHighlightedItemId(null), 1500);
+  const handleAddSingleItem = (item: BundleItem) => {
+    onAddSingleItem(item);
   };
 
-  // Build context tags for the summary bar
+  const savingsPercent = currentBundle.originalPrice > 0
+    ? Math.round((currentBundle.savings / currentBundle.originalPrice) * 100)
+    : 0;
+
   const contextTags = [
     intentData.activity,
-    intentData.location ? `in ${intentData.location}` : '',
+    intentData.location ? intentData.location : '',
     intentData.season || intentData.month,
     intentData.skillLevel,
-  ]
-    .filter(Boolean)
-    .join(' \u2022 ');
+  ].filter(Boolean).join(' \u2022 ');
 
   return (
     <motion.div
@@ -239,158 +362,128 @@ function ResultsPage({
       transition={{ duration: 0.4 }}
       className="relative z-[6] min-h-screen pt-14"
     >
-      {/* ── Fixed video background ── */}
-      <ShopVideoHero />
+      {/* ── Video hero with essentials ── */}
+      <ShopVideoHero bundle={currentBundle} />
 
-      {/* ── Summary bar — sticky under header ── */}
-      <div className="sticky top-14 z-30 bg-foreground text-background px-6 py-3">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h2
-              className="text-background text-sm"
-              style={{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 500 }}
-            >
-              Your Adventure
-            </h2>
-            <span className="text-background/30">|</span>
-            <p className="text-background/60 text-sm">{contextTags}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setAiDrawerOpen(o => !o)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 text-background text-sm hover:bg-white/20 transition-colors"
-            >
-              <Sparkles className="size-3.5" />
-              AI Assistant
-            </button>
-            <button
-              onClick={onStartOver}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 text-background text-sm hover:bg-white/20 transition-colors"
-            >
-              <RotateCcw className="size-3.5" />
-              Start Over
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* ── Adventure Chat Bar (sticky) ── */}
+      <AdventureChatBar
+        intentData={intentData}
+        bundle={currentBundle}
+        onBundleChange={handleBundleChangeFromAI}
+        onStartOver={onStartOver}
+      />
 
-      {/* ── Spacer so controls sit over the video area ── */}
-      <div className="h-[50vh]" />
-
-      {/* ── Floating controls panel ── */}
-      <div className="sticky top-[6rem] z-20 px-6 pb-2 pt-2">
-        <div className="max-w-4xl mx-auto rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 p-5">
-          {/* Sliders row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-4">
-            {/* Style ↔ Performance */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-white/80" style={{ fontWeight: 500 }}>
-                  Style
-                </span>
-                <span className="text-xs text-white/40">
-                  Performance
-                </span>
-              </div>
-              <Slider
-                value={[stylePriority]}
-                onValueChange={handleStyleChange}
-                min={0}
-                max={100}
-                step={1}
-                disabled={cartAdded}
-              />
+      {/* ── Edit Adventure Profile (collapsible) ── */}
+      <div className="border-b border-border bg-background">
+        <div className="max-w-6xl mx-auto">
+          <button
+            onClick={() => setProfileExpanded(!profileExpanded)}
+            className="w-full flex items-center justify-between px-6 py-3 text-sm hover:bg-accent/50 transition-colors"
+            style={{ fontFamily: "'Outfit', sans-serif" }}
+          >
+            <div className="flex items-center gap-3">
+              <span className="font-semibold">Edit Your Adventure Profile</span>
+              <span className="text-muted-foreground">{contextTags}</span>
             </div>
-            {/* Budget ↔ Premium */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-white/80" style={{ fontWeight: 500 }}>
-                  Budget
-                </span>
-                <span className="text-xs text-white/40">
-                  Premium
-                </span>
-              </div>
-              <Slider
-                value={[budgetPriority]}
-                onValueChange={handleBudgetChange}
-                min={0}
-                max={100}
-                step={1}
-                disabled={cartAdded}
-              />
-            </div>
-          </div>
-
-          {/* AI feedback */}
-          <AnimatePresence mode="wait">
-            {sliderFeedback && (
-              <motion.p
-                key={sliderFeedback}
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
+            <ChevronDown className={`size-4 text-muted-foreground transition-transform ${profileExpanded ? 'rotate-180' : ''}`} />
+          </button>
+          <AnimatePresence>
+            {profileExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="mt-3 text-xs text-white/50 italic"
+                className="overflow-hidden"
               >
-                {sliderFeedback}
-              </motion.p>
+                <div className="px-6 pb-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground text-xs uppercase tracking-wider">Activity</span>
+                    <p className="font-medium">{intentData.activity}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-xs uppercase tracking-wider">Location</span>
+                    <p className="font-medium">{intentData.location || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-xs uppercase tracking-wider">Season</span>
+                    <p className="font-medium">{intentData.season || intentData.month}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-xs uppercase tracking-wider">Skill Level</span>
+                    <p className="font-medium">{intentData.skillLevel}</p>
+                  </div>
+                </div>
+              </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Divider */}
-          <div className="border-t border-white/10 my-4" />
-
-          {/* Trait filters */}
-          <div className="flex flex-wrap gap-2">
-            {TRAIT_FILTERS.map((f) => {
-              const active = activeTrait === f.key;
-              return (
-                <button
-                  key={f.key}
-                  onClick={() => setActiveTrait(f.key)}
-                  className={`px-4 py-1.5 rounded-full text-xs transition-all duration-150 ${
-                    active
-                      ? 'bg-white text-black'
-                      : 'bg-white/10 text-white/70 hover:bg-white/20'
-                  }`}
-                  style={{ fontWeight: active ? 600 : 400 }}
-                >
-                  {f.label}
-                </button>
-              );
-            })}
-          </div>
         </div>
       </div>
 
-      {/* ── Recommended Gear ── */}
-      <div className="relative z-10 bg-background/60 backdrop-blur-xl rounded-t-3xl max-w-5xl mx-auto px-6 py-10 -mt-4 shadow-[0_-8px_30px_rgba(0,0,0,0.12)]">
-        <div className="flex items-baseline justify-between mb-6">
+      {/* ── Bundle Summary Banner ── */}
+      <div className="bg-background border-b border-border">
+        <div className="max-w-6xl mx-auto px-6 py-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h1 style={{ fontFamily: "'Fraunces', Georgia, serif" }}>Recommended Gear</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h1
+              className="text-2xl md:text-3xl"
+              style={{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 500 }}
+            >
+              Recommended Gear
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1" style={{ fontFamily: "'Outfit', sans-serif" }}>
               Curated for your {intentData.activity.toLowerCase()} adventure
             </p>
           </div>
-          <p className="text-lg" style={{ fontWeight: 600 }}>
-            Total: ${currentBundle.totalPrice.toFixed(2)}
-          </p>
+          <div className="flex items-center gap-4">
+            <div className="text-right border border-border rounded-lg px-4 py-2">
+              <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Outfit', sans-serif" }}>Adventure Bundle Total</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">${currentBundle.totalPrice.toFixed(2)}</span>
+                <span className="text-sm text-muted-foreground line-through">${currentBundle.originalPrice.toFixed(2)}</span>
+              </div>
+            </div>
+            {currentBundle.savings > 0 && (
+              <div className="border border-border rounded-lg px-4 py-2 text-sm max-w-[200px]" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                Save ${currentBundle.savings.toFixed(2)} ({savingsPercent}% off) when you purchase all recommended items
+              </div>
+            )}
+          </div>
         </div>
+      </div>
 
-        <BundleRecommendation
-          initialBundle={filteredBundle}
-          preferredStyle={style}
-          cartAdded={cartAdded}
-          isUpdate={bundleUpdateCount > 0}
-          cartItemIds={cartItemIds}
-          onAddToCart={(items, total, savings) =>
-            onAddToCart(items, total, savings)
-          }
-          onProceedToCheckout={onProceedToCheckout}
-          onProductClick={handleProductClick}
-          onRestoreToCart={onRestoreToCart}
-        />
+      {/* ── Main content: sidebar + grid ── */}
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="flex gap-8">
+          {/* Sidebar */}
+          <div className="hidden lg:block">
+            <FilterSidebar
+              bundle={currentBundle}
+              filters={filters}
+              onFiltersChange={setFilters}
+              stylePriority={stylePriority}
+              budgetPriority={budgetPriority}
+              onStyleChange={handleStyleChange}
+              onBudgetChange={handleBudgetChange}
+              cartAdded={cartAdded}
+            />
+          </div>
+
+          {/* Product grid */}
+          <div className="flex-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <AnimatePresence mode="popLayout">
+                {filteredItems.map((item) => (
+                  <ProductCard
+                    key={item.catalogItem.id}
+                    item={item}
+                    onAddToCart={handleAddSingleItem}
+                    onProductClick={handleProductClick}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* PDP Sheet */}
@@ -402,16 +495,6 @@ function ResultsPage({
         defaultSize={intentData.size}
         onClose={() => setPdpOpen(false)}
         onReplace={handleReplaceFromPDP}
-      />
-
-      {/* AI Assistant Drawer */}
-      <AIAssistantDrawer
-        open={aiDrawerOpen}
-        onClose={() => setAiDrawerOpen(false)}
-        bundle={currentBundle}
-        intentData={intentData}
-        onBundleChange={handleBundleChangeFromAI}
-        onHighlightCard={handleHighlightCard}
       />
     </motion.div>
   );
@@ -425,17 +508,13 @@ export default function Shop() {
   const session = useShopSession();
   const { view, intentData, bundle, cartAdded } = session;
 
-  // Keep session bundle in sync with cart — handles swaps on cart page & slider drift
+  // Keep session bundle in sync with cart
   useEffect(() => {
     if (!cartAdded || !bundle || cart.items.length === 0) return;
-
     const bundleIds = new Set(bundle.items.map((i) => i.catalogItem.id));
-
-    // If every cart item is already in the bundle, nothing to sync
     const allCartInBundle = cart.items.every((ci) => bundleIds.has(ci.id));
     if (allCartInBundle) return;
 
-    // Rebuild: keep original bundle items (for ghost display) + add any new cart items
     const newCartItems: BundleItem[] = cart.items
       .filter((ci) => !bundleIds.has(ci.id))
       .map((ci) => {
@@ -445,15 +524,7 @@ export default function Shop() {
       })
       .filter((i): i is BundleItem => i !== null);
 
-    // Replace mismatched bundle items with cart versions, keep removed ones for ghost
-    const syncedItems: BundleItem[] = [
-      // Original items that are still in cart OR were removed (for ghost)
-      ...bundle.items,
-      // New items from cart swaps that weren't in the original bundle
-      ...newCartItems,
-    ];
-
-    // Deduplicate by category — if cart swapped jacket A→A2, keep A (ghost) and add A2
+    const syncedItems: BundleItem[] = [...bundle.items, ...newCartItems];
     session.setBundle({
       items: syncedItems,
       totalPrice: syncedItems.reduce((s, i) => s + i.catalogItem.price, 0),
@@ -467,7 +538,6 @@ export default function Shop() {
     const navState = location.state as { intentData?: IntentData } | null;
     if (navState?.intentData) {
       handleComplete(navState.intentData);
-      // Clear navigation state to prevent re-triggering on refresh
       window.history.replaceState({}, '');
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -485,8 +555,6 @@ export default function Shop() {
 
   const handleAddToCart = (items: BundleItem[], _total: number, _savings: number) => {
     session.setCartAdded(true);
-
-    // Snapshot the current bundle into session so navigating back shows the same items
     session.setBundle({
       items,
       totalPrice: items.reduce((s, i) => s + i.catalogItem.price, 0),
@@ -494,7 +562,6 @@ export default function Shop() {
       savings: items.reduce((s, i) => s + (i.catalogItem.originalPrice - i.catalogItem.price), 0),
     });
 
-    // Push into shared cart context so the header badge updates
     cart.addItems(
       items.map((i) => ({
         id: i.catalogItem.id,
@@ -508,6 +575,20 @@ export default function Shop() {
         quantity: 1,
       }))
     );
+  };
+
+  const handleAddSingleItem = (item: BundleItem) => {
+    cart.addItems([{
+      id: item.catalogItem.id,
+      name: item.catalogItem.name,
+      brand: item.catalogItem.brand,
+      price: item.catalogItem.price,
+      originalPrice: item.catalogItem.originalPrice,
+      image: item.catalogItem.image,
+      category: item.catalogItem.category,
+      rationale: item.rationale,
+      quantity: 1,
+    }]);
   };
 
   const cartItemIds = new Set(cart.items.map((i) => i.id));
@@ -582,6 +663,7 @@ export default function Shop() {
             onProceedToCheckout={handleProceedToCheckout}
             onStartOver={handleStartOver}
             onRestoreToCart={handleRestoreToCart}
+            onAddSingleItem={handleAddSingleItem}
           />
         </motion.div>
       )}
