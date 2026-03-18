@@ -2,7 +2,16 @@
   "permissions": {
     "allow": [
       "Bash(open \"/Users/murat.baturay/Code/ave/vec-attempt-3/Archive 8.36.36 PM/adventure-outfitters.html\")",
-      "Read(//Users/murat.baturay/Code/ave/**)"
+      "Read(//Users/murat.baturay/Code/ave/**)",
+      "Bash(open adventure-outfitters.html)",
+      "Read(//Users/murat.baturay/Code/pgen/**)",
+      "Read(//Users/murat.baturay/Code/**)",
+      "Bash(grep -rl 'Adventure Outfitters' /Users/murat.baturay/Code/ --include=*.tsx --include=*.jsx --include=*.ts --include=*.js --include=*.html)",
+      "Bash(ls \"/Users/murat.baturay/Code/ave/vec-attempt-3/Archive 8.36.36\"*\"PM/src/app/pages/\")",
+      "Bash(ls \"/Users/murat.baturay/Code/ave/vec-attempt-3/\"*/src/app/pages/)",
+      "Bash(realpath \"/Users/murat.baturay/Code/ave/vec-attempt-3/\"*/src/app/pages/Home.tsx)",
+      "Bash(ps -p 63709 -o command=)",
+      "Bash(ps -p 38265 -o command=)"
     ],
     "additionalDirectories": [
       "/Users/murat.baturay/Code/ave/vec-attempt-3/Archive 8.36.36 PM"

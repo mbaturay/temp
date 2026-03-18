@@ -6,6 +6,7 @@ import skiVideo from '../../video/ski.mp4';
 import { BundleRecommendation } from '../components/chat/BundleRecommendation';
 import { IntentBuilder } from '../components/shop/IntentBuilder';
 import { ProductDetailPanel } from '../components/shop/ProductDetailPanel';
+import { AIAssistantDrawer } from '../components/shop/AIAssistantDrawer';
 import { Slider } from '../components/ui/slider';
 import {
   generateBundle,
@@ -133,6 +134,8 @@ function ResultsPage({
   const [bundleUpdateCount, setBundleUpdateCount] = useState(0);
   const [pdpItem, setPdpItem] = useState<BundleItem | null>(null);
   const [pdpOpen, setPdpOpen] = useState(false);
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
 
   // ── Sliders ──
   const defaultSlider = skillToSliderDefault(intentData.skillLevel);
@@ -209,6 +212,16 @@ function ResultsPage({
     setPdpOpen(false);
   };
 
+  const handleBundleChangeFromAI = (newBundle: Bundle) => {
+    setCurrentBundle(newBundle);
+    setBundleUpdateCount((c) => c + 1);
+  };
+
+  const handleHighlightCard = (itemId: string | null) => {
+    setHighlightedItemId(itemId);
+    if (itemId) setTimeout(() => setHighlightedItemId(null), 1500);
+  };
+
   // Build context tags for the summary bar
   const contextTags = [
     intentData.activity,
@@ -243,7 +256,10 @@ function ResultsPage({
             <p className="text-background/60 text-sm">{contextTags}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 text-background text-sm hover:bg-white/20 transition-colors">
+            <button
+              onClick={() => setAiDrawerOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 text-background text-sm hover:bg-white/20 transition-colors"
+            >
               <Sparkles className="size-3.5" />
               AI Assistant
             </button>
@@ -386,6 +402,16 @@ function ResultsPage({
         defaultSize={intentData.size}
         onClose={() => setPdpOpen(false)}
         onReplace={handleReplaceFromPDP}
+      />
+
+      {/* AI Assistant Drawer */}
+      <AIAssistantDrawer
+        open={aiDrawerOpen}
+        onClose={() => setAiDrawerOpen(false)}
+        bundle={currentBundle}
+        intentData={intentData}
+        onBundleChange={handleBundleChangeFromAI}
+        onHighlightCard={handleHighlightCard}
       />
     </motion.div>
   );
